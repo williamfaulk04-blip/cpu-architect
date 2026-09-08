@@ -1,6 +1,6 @@
 # CPU Architect
 
-CPU Architect is a browser-based educational game prototype for CSC 3501. Players assemble a simplified processor by dragging the ALU, Control Unit, Register File, and L1 Cache into their correct positions on a processor die.
+CPU Architect is a browser-based educational game prototype for CSC 3501. Players assemble a simplified processor one socket at a time by matching functional descriptions to the ALU, Control Unit, Register File, and L1 Cache.
 
 ## Learning objective
 
@@ -8,12 +8,12 @@ After completing the game, the player should be able to identify four major CPU 
 
 ## How to play
 
-1. Select or drag a colored component from the Component Bay.
-2. Drop it into its matching socket on the Processor Die.
+1. Read the functional description in the highlighted socket.
+2. Choose the component that performs that job.
 3. Read the Architect Log for an explanation or correction.
 4. Correctly install all four parts to bring the core online.
 
-Correct placements earn 250 points. Incorrect placements subtract 25 points, to a minimum score of zero.
+The game starts at 1,000 points. Correct choices earn 250 points; incorrect choices subtract 100 points, to a minimum score of zero.
 
 ## Technology
 
