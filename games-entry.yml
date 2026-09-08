@@ -1,0 +1,12 @@
+- title: "CPU Architect"
+  authors:
+    - "TEAM MEMBER 1"
+    - "TEAM MEMBER 2"
+    - "TEAM MEMBER 3"
+    - "TEAM MEMBER 4"
+    - "TEAM MEMBER 5"
+  topic: "Processor components and CPU datapath organization"
+  description: "Assemble a processor core by placing its major components in the correct locations and learning the role each part plays."
+  learning_objective: "After completing the game, the player should be able to identify the ALU, Control Unit, Register File, and L1 Cache and describe each component's primary responsibility."
+  game_url: "/games/cpu-architect/"
+  thumbnail: "/games/cpu-architect/thumbnail.png"
