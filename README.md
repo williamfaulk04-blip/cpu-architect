@@ -11,9 +11,10 @@ After completing the game, the player should be able to identify four major CPU 
 1. Read the functional description in the highlighted socket.
 2. Choose the component that performs that job.
 3. Read the Architect Log for an explanation or correction.
-4. Correctly install all four parts to bring the core online.
+4. Enter the correctly identified component and assemble its three internal systems.
+5. Return to the processor die and complete all four components to bring the core online.
 
-The game starts at 1,000 points. Correct choices earn 250 points; incorrect choices subtract 100 points, to a minimum score of zero.
+The game starts at 1,000 points. Correct top-level choices earn 250 points, correct internal choices earn 150 points, and incorrect choices subtract 100 points. Reaching zero triggers a failure screen and restart option.
 
 ## Technology
 
