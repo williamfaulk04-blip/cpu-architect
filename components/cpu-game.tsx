@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { playSound } from '../lib/game-audio';
 
 type Key = 'control' | 'registers' | 'alu' | 'cache';
 type Bridge = { destroy: (x?: boolean) => void; events: { emit: (e: string, ...a: unknown[]) => void } };
@@ -51,6 +52,26 @@ export default function CpuGame() {
   const [feedback, setFeedback] = useState('Read the highlighted socket, then choose the component that matches its job.');
   const complete = step === ORDER.length;
   const current = ORDER[step];
+
+  useEffect(() => {
+    const buttonFor = (target: EventTarget | null) => target instanceof Element ? target.closest('button') : null;
+    const click = (event: MouseEvent) => { if (buttonFor(event.target)) playSound('click'); };
+    const over = (event: PointerEvent) => {
+      const button = buttonFor(event.target);
+      if (button && !button.contains(event.relatedTarget as Node | null)) playSound('hover-in');
+    };
+    const out = (event: PointerEvent) => {
+      const button = buttonFor(event.target);
+      if (button && !button.contains(event.relatedTarget as Node | null)) playSound('hover-out');
+    };
+    document.addEventListener('click', click, true);
+    document.addEventListener('pointerover', over);
+    document.addEventListener('pointerout', out);
+    return () => { document.removeEventListener('click', click, true); document.removeEventListener('pointerover', over); document.removeEventListener('pointerout', out); };
+  }, []);
+
+  useEffect(() => { if (failed) playSound('failure'); }, [failed]);
+  useEffect(() => { if (complete) playSound('success'); }, [complete]);
 
   useEffect(() => {
     if (!host.current) return;
