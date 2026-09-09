@@ -38,6 +38,10 @@ Create a production build with:
 pnpm build
 ```
 
+## GitHub Pages
+
+The repository includes a separate static build so the editable source and the deployed site stay in sync. Run `pnpm build:pages` to create `pages-dist/`. Pushing to `main` triggers the included GitHub Actions workflow, which builds and publishes the game automatically.
+
 ## Assignment alignment
 
 The game integrates educational content into its central mechanic: players must reason about processor components rather than answer unrelated quiz questions. It includes player interaction, immediate feedback, a measurable objective, visible progression, instructions, and a technical visualization.
