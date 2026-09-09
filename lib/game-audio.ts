@@ -1,4 +1,5 @@
 let context: AudioContext | null = null;
+let failureAudio: HTMLAudioElement | null = null;
 
 function audio() {
   context ??= new AudioContext();
@@ -26,8 +27,12 @@ export function playSound(sound: 'click' | 'hover-in' | 'failure' | 'success') {
   if (sound === 'click') tone(1250, .045, .025, 'square', 0, 850);
   if (sound === 'hover-in') tone(330, .09, .012, 'sine', 0, 620);
   if (sound === 'failure') {
-    tone(220, .22, .05, 'square', 0, 180);
-    tone(165, .34, .045, 'sawtooth', .16, 82);
+    failureAudio ??= new Audio(new URL('sounds/windows-xp-error.mp3', document.baseURI).href);
+    failureAudio.currentTime = 0;
+    void failureAudio.play().catch(() => {
+      tone(220, .22, .05, 'square', 0, 180);
+      tone(165, .34, .045, 'sawtooth', .16, 82);
+    });
   }
   if (sound === 'success') {
     tone(523.25, .42, .045, 'sine');
