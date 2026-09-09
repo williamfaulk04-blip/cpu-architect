@@ -60,14 +60,9 @@ export default function CpuGame() {
       const button = buttonFor(event.target);
       if (button && !button.contains(event.relatedTarget as Node | null)) playSound('hover-in');
     };
-    const out = (event: PointerEvent) => {
-      const button = buttonFor(event.target);
-      if (button && !button.contains(event.relatedTarget as Node | null)) playSound('hover-out');
-    };
     document.addEventListener('click', click, true);
     document.addEventListener('pointerover', over);
-    document.addEventListener('pointerout', out);
-    return () => { document.removeEventListener('click', click, true); document.removeEventListener('pointerover', over); document.removeEventListener('pointerout', out); };
+    return () => { document.removeEventListener('click', click, true); document.removeEventListener('pointerover', over); };
   }, []);
 
   useEffect(() => { if (failed) playSound('failure'); }, [failed]);

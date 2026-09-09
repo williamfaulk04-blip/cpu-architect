@@ -22,10 +22,9 @@ function tone(frequency: number, duration: number, volume = .035, type: Oscillat
   oscillator.stop(start + duration + .02);
 }
 
-export function playSound(sound: 'click' | 'hover-in' | 'hover-out' | 'failure' | 'success') {
+export function playSound(sound: 'click' | 'hover-in' | 'failure' | 'success') {
   if (sound === 'click') tone(1250, .045, .025, 'square', 0, 850);
   if (sound === 'hover-in') tone(330, .09, .012, 'sine', 0, 620);
-  if (sound === 'hover-out') tone(620, .08, .009, 'sine', 0, 330);
   if (sound === 'failure') {
     tone(220, .22, .05, 'square', 0, 180);
     tone(165, .34, .045, 'sawtooth', .16, 82);
