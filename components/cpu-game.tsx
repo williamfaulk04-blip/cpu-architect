@@ -39,6 +39,7 @@ const PARTS: Record<Key, Part[]> = {
 export default function CpuGame() {
   const host = useRef<HTMLDivElement>(null);
   const bridge = useRef<Bridge | null>(null);
+  const inputReadyAt = useRef(0);
   const [score, setScore] = useState(1000);
   const [step, setStep] = useState(0);
   const [inside, setInside] = useState<Key | null>(null);
@@ -57,32 +58,33 @@ export default function CpuGame() {
       if (!active || !host.current) return;
       const slots = [{ key: 'control' as Key, x: 460, y: 130 }, { key: 'registers' as Key, x: 270, y: 300 }, { key: 'alu' as Key, x: 650, y: 300 }, { key: 'cache' as Key, x: 460, y: 455 }];
       class Scene extends P.Scene {
-        boxes = new Map<Key, any>(); titles = new Map<Key, any>(); activeKey: Key = ORDER[0];
+        boxes = new Map<Key, any>(); titles = new Map<Key, any>(); descriptions = new Map<Key, any>(); baseXs = new Map<Key, number>(); activeKey: Key = ORDER[0];
         create() {
           this.cameras.main.setBackgroundColor('#08111f'); const g = this.add.graphics();
           g.fillStyle(0x0d1b2d, 1).fillRoundedRect(62, 35, 796, 490, 28); g.lineStyle(2, 0x29425f, 1).strokeRoundedRect(62, 35, 796, 490, 28);
           g.lineStyle(5, 0x17304b, .95); g.lineBetween(460, 184, 460, 401); g.lineBetween(405, 300, 515, 300); g.lineBetween(460, 184, 320, 246); g.lineBetween(460, 184, 600, 246); g.lineBetween(320, 354, 460, 401); g.lineBetween(600, 354, 460, 401);
           this.add.text(92, 58, 'PROCESSOR DIE / GUIDED ASSEMBLY', { fontFamily: 'monospace', fontSize: '13px', color: '#6f8fad', letterSpacing: 2 });
-          slots.forEach((s, i) => { const b = this.add.rectangle(s.x, s.y, 270, 108, 0x111f33).setStrokeStyle(2, 0x3b5775); this.add.text(s.x - 116, s.y - 39, `0${i + 1}`, { fontFamily: 'monospace', fontSize: '10px', color: '#6f8fad' }); const t = this.add.text(s.x, s.y - 25, i ? 'LOCKED' : 'ACTIVE SOCKET', { fontFamily: 'monospace', fontSize: '11px', fontStyle: 'bold', color: i ? '#496783' : '#f7c948' }).setOrigin(.5); this.add.text(s.x, s.y + 16, C[s.key].clue, { fontFamily: 'Arial', fontSize: '12px', color: '#9fb2c4', align: 'center', wordWrap: { width: 226 } }).setOrigin(.5); this.boxes.set(s.key, b); this.titles.set(s.key, t); });
+          slots.forEach((s, i) => { const b = this.add.rectangle(s.x, s.y, 270, 108, 0x111f33).setStrokeStyle(2, 0x3b5775); this.add.text(s.x - 116, s.y - 39, `0${i + 1}`, { fontFamily: 'monospace', fontSize: '10px', color: '#6f8fad' }); const t = this.add.text(s.x, s.y - 25, i ? 'LOCKED' : 'ACTIVE SOCKET', { fontFamily: 'monospace', fontSize: '11px', fontStyle: 'bold', color: i ? '#496783' : '#f7c948' }).setOrigin(.5); const d = this.add.text(s.x, s.y + 16, C[s.key].clue, { fontFamily: 'Arial', fontSize: '12px', color: '#9fb2c4', align: 'center', wordWrap: { width: 226 } }).setOrigin(.5); this.boxes.set(s.key, b); this.titles.set(s.key, t); this.descriptions.set(s.key, d); this.baseXs.set(s.key, s.x); });
           this.paint(ORDER[0]);
-          this.game.events.on('correct', (key: Key, next?: Key) => { this.boxes.get(key)?.setFillStyle(P.Display.Color.HexStringToColor(C[key].color).color, .95).setStrokeStyle(2, 0xffffff, .2); this.titles.get(key)?.setText(`✓ ${C[key].name.toUpperCase()}`).setColor('#07101c'); if (next) this.paint(next); else this.cameras.main.flash(500, 85, 214, 190, false); });
-          this.game.events.on('wrong', () => { const b = this.boxes.get(this.activeKey); this.tweens.add({ targets: b, x: '+=8', yoyo: true, repeat: 3, duration: 45 }); this.cameras.main.flash(120, 255, 80, 70, false); });
+          this.game.events.on('correct', (key: Key, next?: Key) => { this.boxes.get(key)?.setFillStyle(P.Display.Color.HexStringToColor(C[key].color).color, .95).setStrokeStyle(2, 0xffffff, .2); this.titles.get(key)?.setText(`✓ ${C[key].name.toUpperCase()}`).setColor('#07101c'); this.descriptions.get(key)?.setColor('#07101c'); if (next) this.paint(next); else this.cameras.main.flash(500, 85, 214, 190, false); });
+          this.game.events.on('wrong', () => { const b = this.boxes.get(this.activeKey); const baseX = this.baseXs.get(this.activeKey) ?? b.x; this.tweens.killTweensOf(b); b.setX(baseX); this.tweens.add({ targets: b, x: baseX + 8, yoyo: true, repeat: 3, duration: 45, onComplete: () => b.setX(baseX) }); this.cameras.main.flash(120, 255, 80, 70, false); });
         }
         paint(key: Key) { this.activeKey = key; this.boxes.get(key)?.setStrokeStyle(4, 0xf7c948).setFillStyle(0x172a40); this.titles.get(key)?.setText('ACTIVE SOCKET').setColor('#f7c948'); }
       }
-      game = new P.Game({ type: P.AUTO, parent: host.current, width: 920, height: 560, scene: Scene, scale: { mode: P.Scale.FIT, autoCenter: P.Scale.CENTER_BOTH } }) as Bridge; bridge.current = game;
+      game = new P.Game({ type: P.AUTO, parent: host.current, width: 920, height: 560, resolution: Math.min(window.devicePixelRatio || 1, 2), render: { antialias: true, roundPixels: true }, scene: Scene, scale: { mode: P.Scale.FIT, autoCenter: P.Scale.CENTER_BOTH } }) as Bridge; bridge.current = game;
     });
     return () => { active = false; game?.destroy(true); bridge.current = null; };
   }, []);
 
   function penalize(message: string, id: string) { setScore(v => { const next = Math.max(0, v - 100); if (next === 0) setFailed(true); return next; }); setWrong(id); setFeedback(`${message} −100 points.`); bridge.current?.events.emit('wrong'); }
+  function acceptInput() { const now = performance.now(); if (now < inputReadyAt.current) return false; inputReadyAt.current = now + 350; return true; }
   function chooseComponent(key: Key) {
-    if (!current || failed) return;
+    if (!current || failed || !acceptInput()) return;
     if (key !== current) return penalize(`${C[key].name} ${C[key].role.toLowerCase()} Re-read the socket and try again.`, key);
     setScore(v => v + 250); setWrong(null); setInside(key); setPartStep(0); setFeedback(`${C[key].name} identified. Zooming inside—assemble its three internal systems.`);
   }
   function choosePart(index: number) {
-    if (!inside || failed) return;
+    if (!inside || failed || !acceptInput()) return;
     const target = PARTS[inside][partStep]; const chosen = PARTS[inside][index];
     if (index !== partStep) return penalize(`${chosen.name} ${chosen.role}; it does not match this internal socket.`, `${inside}-${index}`);
     setScore(v => v + 150); setWrong(null); setFeedback(`${target.name} installed correctly—it ${target.role}.`);
