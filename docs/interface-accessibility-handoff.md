@@ -365,3 +365,23 @@ At completion, report:
 ## Coordination note
 
 The gameplay/data team may change the source of the props while this branch is active, but it should not change the meaning of the integration contract without notifying the UI owner. If both branches need the same shared type, coordinate before moving it so neither side creates a competing definition.
+
+## GPU interface implementation and verification
+
+The responsive interface is integrated with the gameplay core. The normal app and static GitHub Pages entries both open GPU Architect with the Processing Layer, Graphics Card Hardware, and Cooling Assembly. The game uses the gameplay branch's current inventory of 21 components (8, 8, and 5).
+
+### Implementation
+
+- `components/game/assembly-ui.tsx` and `components/game/assembly-ui.css` contain the reusable React interface. They render the stage, score, active clue, component tray, selected definition, installed-piece progress, Architect Log, and dialogs from props and callbacks.
+- `components/gpu-game.tsx` adapts `createGameplayViewModel` and the existing session reducer to the interface. Selecting a card displays its explanation. Install and desktop drag-and-drop dispatch the same placement action. The Phaser scene checks that a drop lands in the active socket and draws locked pieces on the board.
+- Phaser zooms toward the active socket and provides placement feedback. The system reduced-motion preference suppresses major movement and flashes. The mute toggle controls the existing sound effects.
+- Incorrect placements keep the same socket active, apply the existing score penalty, and open a Windows-style hint. Escape or Try again dismisses the hint and restores focus to the install control. At zero score, the failure dialog requires a restart.
+- Each completed layer displays its explanation and advance action. The final screen summarizes how the processing, board hardware, and cooling layers work together and offers a rebuild.
+- Desktop uses a side information panel and tray below the canvas. Narrow widths place the canvas first and allow the card tray to scroll horizontally. Cards support Tab and Enter/Space, as well as tap selection and installation. The Architect Log announces routine feedback through a polite live region.
+
+### Verification and test delivery
+
+- The static GitHub Pages build passed with the existing `/cpu-architect/` base path. Lint passed for the changed React files. Repository-wide lint reports existing findings in the CPU and shared UI files. The TypeScript check reports the existing Phaser `GameConfig.resolution` error in `components/cpu-game.tsx`.
+- All six gameplay session tests passed. Chromium checks covered all 21 placements, layer transitions, final results, restart, desktop drop hit testing, keyboard hint dismissal and focus restoration, and touch placement at 375 CSS pixels. The desktop check used a 1280 CSS pixel viewport.
+- The local build test package included the static site and a Windows launcher. ChatGPT's built-in browser could not reach the local server, so a separate single-file `GPU Architect.html` preview bundled the game scripts, stylesheet, and failure audio for direct offline use. The offline file passed the full Chromium playthrough and the user confirmed it worked. These preview artifacts were delivered separately from the repository.
+- `ed1d79a` was the local mock one-socket checkpoint. `d88268c` is the real gameplay integration, based on gameplay core tip `cf7814f`. The integrated branch uses the real game directly in place of the mock preview.

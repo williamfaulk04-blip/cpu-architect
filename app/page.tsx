@@ -1,4 +1,4 @@
 'use client';
 import dynamic from 'next/dynamic';
-const CpuGame = dynamic(() => import('@/components/cpu-game'), { ssr: false });
-export default function Home() { return <CpuGame />; }
+const GpuGame = dynamic(() => import('@/components/gpu-game'), { ssr: false });
+export default function Home() { return <GpuGame />; }
