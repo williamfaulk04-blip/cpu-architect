@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useReducer, useRef } from 'react';
+import type { GameObjects } from 'phaser';
 import { GAME_CONFIG } from '../game/config';
 import { GPU_COMPONENTS, componentById } from '../game/content/components';
 import { PROCESSING_STAGE } from '../game/content/stages';
@@ -45,13 +46,13 @@ export default function GpuGame() {
     if (!host.current) return;
     let game: Bridge | undefined;
     let mounted = true;
-    import('phaser').then((Phaser) => {
+    void import('phaser').then((Phaser) => {
       if (!mounted || !host.current) return;
       class AssemblyScene extends Phaser.Scene {
-        boxes = new Map<GpuComponentId, any>();
-        titles = new Map<GpuComponentId, any>();
-        descriptions = new Map<GpuComponentId, any>();
-        numbers = new Map<GpuComponentId, any>();
+        boxes = new Map<GpuComponentId, GameObjects.Rectangle>();
+        titles = new Map<GpuComponentId, GameObjects.Text>();
+        descriptions = new Map<GpuComponentId, GameObjects.Text>();
+        numbers = new Map<GpuComponentId, GameObjects.Text>();
         baseXs = new Map<GpuComponentId, number>();
         activeId: GpuComponentId = PROCESSING_STAGE.componentIds[0];
 
@@ -101,7 +102,8 @@ export default function GpuGame() {
           this.titles.get(id)?.setText('ACTIVE SOCKET').setColor('#f7c948');
         }
       }
-      game = new Phaser.Game({ type: Phaser.AUTO, parent: host.current, width: 920, height: 560, resolution: Math.min(window.devicePixelRatio || 1, 2), render: { antialias: true, roundPixels: true }, scene: AssemblyScene, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH } }) as Bridge;
+      // oxlint-disable-next-line react/react-compiler -- Phaser owns and mutates its scene instance outside React.
+      game = new Phaser.Game({ type: Phaser.AUTO, parent: host.current, width: 920, height: 560, render: { antialias: true, roundPixels: true }, scene: AssemblyScene, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH } }) as Bridge;
       bridge.current = game;
     });
     return () => { mounted = false; game?.destroy(true); bridge.current = null; };
@@ -114,7 +116,10 @@ export default function GpuGame() {
     inputReadyAt.current = now + GAME_CONFIG.inputLockMs;
     const correct = componentId === activeId;
     dispatch({ type: 'SELECT_COMPONENT', componentId });
-    if (!correct) return void bridge.current?.events.emit('wrong');
+    if (!correct) {
+      bridge.current?.events.emit('wrong');
+      return;
+    }
     bridge.current?.events.emit('correct', componentId, PROCESSING_STAGE.componentIds[session.installedIds.length + 1]);
   }
 
@@ -125,9 +130,9 @@ export default function GpuGame() {
       <h1>{session.phase === 'STAGE_COMPLETE' ? 'Layer online.' : session.phase === 'STAGE_INTRO' ? 'Build the GPU.' : 'Identify the component.'}</h1>
       <p>{session.phase === 'STAGE_INTRO' ? PROCESSING_STAGE.introduction : session.phase === 'STAGE_COMPLETE' ? PROCESSING_STAGE.completionMessage : 'Read the function inside the highlighted socket and choose the matching GPU component.'}</p>
       {session.phase === 'STAGE_INTRO' && <div className="stage-card"><span>FIRST PLAYABLE SLICE</span><b>3 processing components</b><p>Correct placements earn points. A correct first attempt earns an additional bonus.</p><button onClick={() => dispatch({ type: 'START_STAGE' })}>BEGIN ASSEMBLY</button></div>}
-      {session.phase === 'SOCKET_ACTIVE' && <div className="choices" role="group" aria-label="GPU component choices">{PROCESSING_STAGE.componentIds.map((id) => { const component = GPU_COMPONENTS[id]; return <button key={id} className={session.wrongId === id ? 'wrong' : ''} onClick={() => chooseComponent(id)} disabled={session.installedIds.includes(id)}><span style={{ background: component.color }}>{component.shortName}</span><span className="choice-copy"><b>{component.name}</b><em>{component.category.replace('_', ' ')}</em></span><small>INSTALL</small></button>; })}</div>}
+      {session.phase === 'SOCKET_ACTIVE' && <fieldset className="choices"><legend className="visually-hidden">GPU component choices</legend>{PROCESSING_STAGE.componentIds.map((id) => { const component = GPU_COMPONENTS[id]; return <button key={id} className={session.wrongId === id ? 'wrong' : ''} onClick={() => chooseComponent(id)} disabled={session.installedIds.includes(id)}><span style={{ background: component.color }}>{component.shortName}</span><span className="choice-copy"><b>{component.name}</b><em>{component.category.replace('_', ' ')}</em></span><small>INSTALL</small></button>; })}</fieldset>}
       {session.phase === 'STAGE_COMPLETE' && <div className="completion-card"><b>STAGE 01 COMPLETE</b><span>Score: {session.score}</span><p>+{GAME_CONFIG.stageCompletionBonus} stage-completion bonus applied.</p><button onClick={() => location.reload()}>REBUILD LAYER</button></div>}
-      <div className="progress-label"><span>PROCESSING LAYER</span><b>{session.installedIds.length}/{PROCESSING_STAGE.componentIds.length}</b></div><div className="progress" role="progressbar" aria-label="Processing layer completion" aria-valuemin={0} aria-valuemax={PROCESSING_STAGE.componentIds.length} aria-valuenow={session.installedIds.length}><i style={{ width: `${progress}%` }} /></div>
+      <div className="progress-label"><span>PROCESSING LAYER</span><b>{session.installedIds.length}/{PROCESSING_STAGE.componentIds.length}</b></div><div className="progress" aria-hidden="true"><i style={{ width: `${progress}%` }} /></div><progress className="visually-hidden" aria-label="Processing layer completion" max={PROCESSING_STAGE.componentIds.length} value={session.installedIds.length}>{session.installedIds.length} of {PROCESSING_STAGE.componentIds.length}</progress>
     </aside><section className="game-panel"><div ref={host} className="phaser-host" aria-label="GPU processing layer assembly diagram"/><div className={`feedback ${session.phase === 'STAGE_COMPLETE' ? 'complete' : session.wrongId ? 'error' : ''}`} aria-live="polite"><span>{session.phase === 'STAGE_COMPLETE' ? 'LAYER ONLINE' : session.wrongId ? 'POINT PENALTY' : 'ARCHITECT LOG'}</span><p>{session.feedback}</p></div></section></section>
     <footer><span>CSC 3501 • COMPUTER ORGANIZATION & DESIGN</span><span>GPU MIGRATION • STAGE 01</span></footer>
     {session.phase === 'FAILED' && <section className="failure-screen" role="alertdialog" aria-modal="true" aria-labelledby="failure-title"><div className="sad-face">:(</div><h2 id="failure-title">You failed!</h2><p>Your GPU ran into a problem and could not complete the processing layer.</p><p className="failure-detail">SCORE_DEPLETED_TO_ZERO<br/>Stop code: INCORRECT_GPU_COMPONENT_SELECTION</p><div className="fake-progress">0% complete</div><button onClick={() => location.reload()}>Restart assembly</button></section>}
