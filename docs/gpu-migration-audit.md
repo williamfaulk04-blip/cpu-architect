@@ -8,7 +8,7 @@ This document records the first implementation audit for the migration from CPU 
 - Migration branch: `feature/gpu-architect-migration`
 - Deployment target: static GitHub Pages build under `/cpu-architect/`
 - Frameworks retained: React, Phaser, TypeScript, Vite, and the existing CSS application shell
-- MVP content target: 15 GPU components across processing, graphics-card hardware, and cooling stages
+- Approved content target: 21 GPU components across processing, graphics-card hardware, and cooling stages
 
 `main` remains the preserved CPU Architect version. GPU work belongs on the migration branch until it is reviewed and ready to merge.
 
@@ -89,7 +89,7 @@ Retain:
 - Expand/close animation pattern
 - Responsive explorer layout concept
 
-Replace the four-component processor diagram with the completed GPU and its 15 MVP components. Essential information must also be selectable by touch, not hover only.
+Replace the four-component processor diagram with the completed GPU and its 21 approved components. Essential information must also be selectable by touch, not hover only.
 
 ## Refactor before expanding
 
@@ -203,11 +203,11 @@ This is a target structure, not a requirement to split every file immediately. T
 ## Recommended implementation order
 
 1. Preserve `main` and work only on `feature/gpu-architect-migration`.
-2. Add GPU types, scoring configuration, stage records, and the 15-component schema.
+2. Add GPU types, scoring configuration, stage records, and the 21-component schema.
 3. Add validation for component IDs, socket IDs, choices, ordering, and asset keys.
 4. Introduce the explicit session-state controller.
 5. Rename the top-level component and neutralize CPU-specific CSS class names where practical.
-6. Build a Stage 1 vertical slice with Streaming Multiprocessor, CUDA Cores, and GPU Cache.
+6. Build a Stage 1 vertical slice, then expand it to the eight approved processing-layer components.
 7. Validate correct, incorrect, failure, progress, stage-completion, keyboard, touch, and resize behavior.
 8. Review the vertical slice before producing the remaining twelve components.
 9. Add Stage 2, Stage 3, final results, and Explore GPU.
@@ -219,7 +219,7 @@ The first playable migration checkpoint should include:
 
 - GPU Architect branding
 - Stage 1 introduction
-- Three data-driven Stage 1 components
+- Eight data-driven Stage 1 components
 - One active socket at a time
 - Functional clues and category badges
 - Pointer and keyboard selection

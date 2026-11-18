@@ -79,6 +79,30 @@ fieldset.choices {
   border: 0;
 }
 
+.gpu-shell fieldset.choices {
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.overall-progress-label {
+  margin-top: 14px;
+}
+
+.overall-progress i {
+  background: #55d6be;
+  box-shadow: 0 0 16px #55d6be88;
+}
+
+.mission-complete {
+  border-color: #f7c948;
+  background: #28250f;
+}
+
+.mission-complete b {
+  color: #f7c948;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;

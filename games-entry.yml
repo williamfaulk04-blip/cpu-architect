@@ -7,6 +7,6 @@
     - "TEAM MEMBER 5"
   topic: "GPU components and parallel processing architecture"
   description: "Assemble a GPU one layer at a time by matching each component to the function it performs."
-  learning_objective: "After completing the first stage, the player should be able to identify the Streaming Multiprocessor, CUDA Cores, and GPU Cache and explain their roles in parallel processing."
+  learning_objective: "After completing the game, the player should be able to identify the major processing, board-hardware, and cooling components of a GPU and explain how the three layers work together."
   game_url: "/games/cpu-architect/"
   thumbnail: "/games/cpu-architect/thumbnail.png"

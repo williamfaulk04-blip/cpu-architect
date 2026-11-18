@@ -1,6 +1,27 @@
 export type ComponentCategory = 'CUDA_EXECUTION' | 'CUDA_MEMORY' | 'BOARD_HARDWARE' | 'COOLING';
 
-export type GpuComponentId = 'streaming-multiprocessor' | 'cuda-cores' | 'gpu-cache';
+export type GpuComponentId =
+  | 'cuda-cores'
+  | 'streaming-multiprocessor'
+  | 'tensor-cores'
+  | 'rt-cores'
+  | 'texture-mapping-units'
+  | 'render-output-units'
+  | 'gpu-cache'
+  | 'memory-controller'
+  | 'gpu-chip'
+  | 'pcb'
+  | 'displayport'
+  | 'hdmi-port'
+  | 'power-connector'
+  | 'pcie-connector'
+  | 'voltage-regulator-module'
+  | 'vram'
+  | 'thermal-paste'
+  | 'copper-heat-pipes'
+  | 'heatsink'
+  | 'cooling-fans'
+  | 'thermal-pads';
 
 export type GpuComponent = {
   id: GpuComponentId;
@@ -21,10 +42,11 @@ export type GpuStage = {
   componentIds: readonly GpuComponentId[];
 };
 
-export type SessionPhase = 'STAGE_INTRO' | 'SOCKET_ACTIVE' | 'STAGE_COMPLETE' | 'FAILED';
+export type SessionPhase = 'STAGE_INTRO' | 'SOCKET_ACTIVE' | 'STAGE_COMPLETE' | 'MISSION_COMPLETE' | 'FAILED';
 
 export type SessionState = {
   phase: SessionPhase;
+  stageIndex: number;
   score: number;
   installedIds: GpuComponentId[];
   attemptsForSocket: number;
@@ -35,4 +57,5 @@ export type SessionState = {
 export type SessionAction =
   | { type: 'START_STAGE' }
   | { type: 'SELECT_COMPONENT'; componentId: GpuComponentId }
+  | { type: 'NEXT_STAGE' }
   | { type: 'RESTART' };
