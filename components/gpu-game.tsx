@@ -1,13 +1,14 @@
 'use client';
 
 import type { GameObjects } from 'phaser';
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { GAME_CONFIG } from '../game/config';
-import { GPU_COMPONENTS, componentById } from '../game/content/components';
-import { GPU_STAGES, TOTAL_COMPONENT_COUNT } from '../game/content/stages';
-import { activeComponentId, activeStage, createInitialSession, overallProgress, sessionReducer, stageInstalledIds } from '../game/session';
+import { componentById } from '../game/content/components';
+import { activeStage, createInitialSession, sessionReducer } from '../game/session';
 import type { GpuComponentId } from '../game/types';
+import { createGameplayViewModel } from '../game/ui-contract';
 import { playSound } from '../lib/game-audio';
+import AssemblyUI from './game/assembly-ui';
 
 type Bridge = { destroy: (removeCanvas?: boolean) => void; events: { emit: (event: string, ...args: unknown[]) => void } };
 type SocketLayout = { id: GpuComponentId; x: number; y: number; width: number; height: number };
@@ -28,13 +29,32 @@ export default function GpuGame() {
   const inputReadyAt = useRef(0);
   const [session, dispatch] = useReducer(sessionReducer, createInitialSession());
   const stage = activeStage(session);
-  const installedInStage = stageInstalledIds(session);
-  const activeId = activeComponentId(session);
-  const stageProgress = installedInStage.length / stage.componentIds.length * 100;
-  const totalProgress = overallProgress(session) * 100;
-  const finalStage = session.stageIndex === GPU_STAGES.length - 1;
+  const view = createGameplayViewModel(session);
+  const activeId = view.activeComponentId;
+  const [selected, setSelected] = useState<GpuComponentId | null>(null);
+  const [hint, setHint] = useState<{ title: string; message: string }>();
+  const [muted, setMuted] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [boardRevision, setBoardRevision] = useState(0);
+  const motion = useRef(reducedMotion);
+  const canDropAt = useRef<(x: number, y: number) => boolean>(() => false);
+  const boardKey = `${stage.id}:${boardRevision}`;
+  const [readyBoard, setReadyBoard] = useState<string>();
 
   useEffect(() => {
+    const preference = matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => {
+      motion.current = preference.matches;
+      setReducedMotion(preference.matches);
+      bridge.current?.events.emit('motion');
+    };
+    preference.addEventListener('change', update);
+    update();
+    return () => preference.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (muted) return;
     const buttonFor = (target: EventTarget | null) => target instanceof Element ? target.closest('button') : null;
     const click = (event: MouseEvent) => { if (buttonFor(event.target)) playSound('click'); };
     const over = (event: PointerEvent) => {
@@ -44,12 +64,13 @@ export default function GpuGame() {
     document.addEventListener('click', click, true);
     document.addEventListener('pointerover', over);
     return () => { document.removeEventListener('click', click, true); document.removeEventListener('pointerover', over); };
-  }, []);
+  }, [muted]);
 
   useEffect(() => {
+    if (muted) return;
     if (session.phase === 'FAILED') playSound('failure');
     if (session.phase === 'STAGE_COMPLETE' || session.phase === 'MISSION_COMPLETE') playSound('success');
-  }, [session.phase]);
+  }, [session.phase, muted]);
 
   useEffect(() => {
     if (!host.current) return;
@@ -82,6 +103,17 @@ export default function GpuGame() {
             this.boxes.set(socket.id, box); this.titles.set(socket.id, title); this.descriptions.set(socket.id, description); this.numbers.set(socket.id, number); this.baseXs.set(socket.id, socket.x);
           });
           this.paintActive(this.activeId);
+          canDropAt.current = (x, y) => {
+            const canvas = this.game.canvas.getBoundingClientRect();
+            const world = this.cameras.main.getWorldPoint(
+              (x - canvas.left) * 920 / canvas.width,
+              (y - canvas.top) * 560 / canvas.height,
+            );
+            const box = this.boxes.get(this.activeId);
+            return box?.getBounds().contains(world.x, world.y) ?? false;
+          };
+          this.game.events.on('begin', () => this.focusActive());
+          this.game.events.on('motion', () => this.focusActive());
 
           this.game.events.on('correct', (completedId: GpuComponentId, nextId?: GpuComponentId) => {
             const component = componentById(completedId);
@@ -90,9 +122,16 @@ export default function GpuGame() {
             this.titles.get(completedId)?.setText(`✓ ${component.shortName}`).setColor('#07101c');
             this.descriptions.get(completedId)?.setText(component.name).setColor('#07101c');
             this.numbers.get(completedId)?.setColor('#07101c');
-            if (nextId) this.paintActive(nextId); else this.cameras.main.flash(500, 85, 214, 190, false);
+            if (nextId) {
+              this.paintActive(nextId);
+              this.focusActive();
+            } else {
+              this.cameras.main.setZoom(1).centerOn(460, 280);
+              if (!motion.current) this.cameras.main.flash(500, 85, 214, 190, false);
+            }
           });
           this.game.events.on('wrong', () => {
+            if (motion.current) return;
             const box = this.boxes.get(this.activeId);
             if (!box) return;
             const baseX = this.baseXs.get(this.activeId) ?? box.x;
@@ -100,6 +139,21 @@ export default function GpuGame() {
             this.tweens.add({ targets: box, x: baseX + 8, yoyo: true, repeat: 3, duration: 45, onComplete: () => box.setX(baseX) });
             this.cameras.main.flash(120, 255, 80, 70, false);
           });
+          if (mounted) setReadyBoard(boardKey);
+        }
+
+        focusActive() {
+          const camera = this.cameras.main;
+          camera.zoomEffect.reset();
+          camera.panEffect.reset();
+          if (motion.current) {
+            camera.setZoom(1).centerOn(460, 280);
+            return;
+          }
+          const socket = sockets.find(({ id }) => id === this.activeId);
+          if (!socket) return;
+          camera.zoomTo(1.25, 240);
+          camera.pan(460 + (socket.x - 460) * .32, 280 + (socket.y - 280) * .32, 240);
         }
 
         paintActive(id: GpuComponentId) {
@@ -113,41 +167,102 @@ export default function GpuGame() {
       game = new Phaser.Game({ type: Phaser.AUTO, parent: host.current, width: 920, height: 560, render: { antialias: true, roundPixels: true }, scene: AssemblyScene, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH } }) as Bridge;
       bridge.current = game;
     });
-    return () => { mounted = false; game?.destroy(true); bridge.current = null; };
-  }, [session.stageIndex, stage]);
+    return () => {
+      mounted = false;
+      canDropAt.current = () => false;
+      game?.destroy(true);
+      bridge.current = null;
+    };
+  }, [boardKey, session.stageIndex, stage]);
 
-  function chooseComponent(componentId: GpuComponentId) {
-    if (session.phase !== 'SOCKET_ACTIVE' || !activeId) return;
+  function installComponent(componentId: GpuComponentId) {
+    if (session.phase !== 'SOCKET_ACTIVE' || !activeId || hint || session.installedIds.includes(componentId)) return;
     const now = performance.now();
     if (now < inputReadyAt.current) return;
     inputReadyAt.current = now + GAME_CONFIG.inputLockMs;
+
     const correct = componentId === activeId;
     dispatch({ type: 'SELECT_COMPONENT', componentId });
     if (!correct) {
+      const rejected = componentById(componentId);
+      setSelected(componentId);
+      setHint({
+        title: 'Placement rejected',
+        message: `${rejected.name} returned to the tray. ${rejected.explanation} Active socket clue: ${componentById(activeId).clue}`,
+      });
       bridge.current?.events.emit('wrong');
-      return;
+    } else {
+      setSelected(null);
+      bridge.current?.events.emit('correct', componentId, stage.componentIds[view.installedInStage + 1]);
     }
-    bridge.current?.events.emit('correct', componentId, stage.componentIds[installedInStage.length + 1]);
   }
 
-  const heading = session.phase === 'MISSION_COMPLETE' ? 'GPU online.' : session.phase === 'STAGE_COMPLETE' ? 'Layer online.' : session.phase === 'STAGE_INTRO' ? `Build layer ${session.stageIndex + 1}.` : 'Identify the component.';
-  const instructions = session.phase === 'MISSION_COMPLETE' ? session.feedback : session.phase === 'STAGE_INTRO' ? stage.introduction : session.phase === 'STAGE_COMPLETE' ? stage.completionMessage : 'Read the function inside the highlighted socket and choose the matching GPU component.';
+  function restart() {
+    setSelected(null);
+    setHint(undefined);
+    inputReadyAt.current = 0;
+    setBoardRevision((revision) => revision + 1);
+    dispatch({ type: 'RESTART' });
+  }
 
-  return <main className="game-shell gpu-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark">G</span><div><b>GPU ARCHITECT</b><span>ASSEMBLE • ACCELERATE • RENDER</span></div></div><div className="mission"><span>{stage.eyebrow}</span><b>{stage.name}</b></div><div className="score"><span>SCORE</span><b>{session.score.toString().padStart(4, '0')}</b></div></header>
-    <section className="workbench guided"><aside className="intel-panel">
-      <span className="eyebrow">{stage.eyebrow} • {session.stageIndex + 1}/{GPU_STAGES.length}</span><h1>{heading}</h1><p>{instructions}</p>
-      {session.phase === 'STAGE_INTRO' && <div className="stage-card"><span>{stage.name.toUpperCase()}</span><b>{stage.componentIds.length} components</b><p>Correct placements earn points. A correct first attempt earns an additional bonus.</p><button onClick={() => dispatch({ type: 'START_STAGE' })}>BEGIN LAYER {session.stageIndex + 1}</button></div>}
-      {session.phase === 'SOCKET_ACTIVE' && <fieldset className="choices"><legend className="visually-hidden">{stage.name} component choices</legend>{stage.componentIds.map((id) => { const component = GPU_COMPONENTS[id]; return <button key={id} className={session.wrongId === id ? 'wrong' : ''} onClick={() => chooseComponent(id)} disabled={session.installedIds.includes(id)}><span style={{ background: component.color }}>{component.shortName}</span><span className="choice-copy"><b>{component.name}</b><em>{component.category.replace('_', ' ')}</em></span><small>INSTALL</small></button>; })}</fieldset>}
-      {session.phase === 'STAGE_COMPLETE' && <div className="completion-card"><b>LAYER {session.stageIndex + 1} COMPLETE</b><span>Score: {session.score}</span><p>+{GAME_CONFIG.stageCompletionBonus} stage-completion bonus applied.</p><button onClick={() => dispatch({ type: 'NEXT_STAGE' })}>{finalStage ? 'FINISH GPU' : 'CONTINUE TO NEXT LAYER'}</button></div>}
-      {session.phase === 'MISSION_COMPLETE' && <div className="completion-card mission-complete"><b>GPU ASSEMBLY COMPLETE</b><span>Final score: {session.score}</span><p>All {TOTAL_COMPONENT_COUNT} approved components are installed across three working layers.</p><button onClick={() => location.reload()}>REBUILD GPU</button></div>}
-      <div className="progress-label"><span>{stage.name.toUpperCase()}</span><b>{installedInStage.length}/{stage.componentIds.length}</b></div><div className="progress" aria-hidden="true"><i style={{ width: `${stageProgress}%` }} /></div>
-      <div className="progress-label overall-progress-label"><span>WHOLE GPU</span><b>{session.installedIds.length}/{TOTAL_COMPONENT_COUNT}</b></div><div className="progress overall-progress" aria-hidden="true"><i style={{ width: `${totalProgress}%` }} /></div>
-      <progress className="visually-hidden" aria-label="Whole GPU completion" max={TOTAL_COMPONENT_COUNT} value={session.installedIds.length}>{session.installedIds.length} of {TOTAL_COMPONENT_COUNT}</progress>
-    </aside><section className="game-panel"><div ref={host} className="phaser-host" aria-label={`${stage.name} assembly diagram`}/><div className={`feedback ${session.phase === 'STAGE_COMPLETE' || session.phase === 'MISSION_COMPLETE' ? 'complete' : session.wrongId ? 'error' : ''}`} aria-live="polite"><span>{session.phase === 'MISSION_COMPLETE' ? 'GPU ONLINE' : session.phase === 'STAGE_COMPLETE' ? 'LAYER ONLINE' : session.wrongId ? 'POINT PENALTY' : 'ARCHITECT LOG'}</span><p>{session.feedback}</p></div></section></section>
-    <footer><span>CSC 3501 • COMPUTER ORGANIZATION & DESIGN</span><span>GPU ASSEMBLY • LAYER {session.stageIndex + 1} OF {GPU_STAGES.length}</span></footer>
-    {session.phase === 'FAILED' && <section className="failure-screen" role="alertdialog" aria-modal="true" aria-labelledby="failure-title"><div className="sad-face">:(</div><h2 id="failure-title">You failed!</h2><p>Your GPU ran into a problem while assembling {stage.name.toLowerCase()}.</p><p className="failure-detail">SCORE_DEPLETED_TO_ZERO<br/>Stop code: INCORRECT_GPU_COMPONENT_SELECTION</p><div className="fake-progress">{Math.round(totalProgress)}% complete</div><button onClick={() => location.reload()}>Restart assembly</button></section>}
-  </main>;
+  const hasSocket = session.phase === 'SOCKET_ACTIVE' && activeId !== null;
+  const phaseAction = view.canStartStage
+    ? {
+        label: `Begin layer ${view.stageIndex + 1}`,
+        disabled: readyBoard !== boardKey,
+        run: () => {
+          dispatch({ type: 'START_STAGE' });
+          bridge.current?.events.emit('begin');
+        },
+      }
+    : view.canContinue
+      ? {
+          label: view.isFinalStage ? 'Finish GPU' : 'Continue to next layer',
+          run: () => dispatch({ type: 'NEXT_STAGE' }),
+        }
+      : view.isComplete ? { label: 'Rebuild GPU', run: restart } : undefined;
+
+  const heading = view.isComplete ? 'GPU assembly complete'
+    : view.canContinue ? 'Layer complete'
+    : view.canStartStage ? stage.name : 'Active socket';
+  const clue = view.isComplete
+    ? 'The board delivers power and moves data between the host, GPU, and graphics memory. The processing layer runs parallel workloads and renders frames, while the cooling assembly carries heat away so the card can keep working.'
+    : view.canContinue ? stage.completionMessage
+    : view.canStartStage ? stage.introduction
+    : activeId ? componentById(activeId).clue : '';
+
+  return (
+    <AssemblyUI
+      {...view}
+      activeSocketLabel={heading}
+      clue={clue}
+      selectedComponentId={selected}
+      selectedDefinition={selected ? componentById(selected).explanation : undefined}
+      inputLocked={!hasSocket || !!hint}
+      muted={muted}
+      reducedMotion={reducedMotion}
+      canvas={<div ref={host} className="assembly-phaser-host" aria-label={`${stage.name} assembly diagram`} />}
+      phaseAction={phaseAction}
+      hint={view.hasFailed ? {
+        title: 'Assembly stopped',
+        message: `${hint?.message ?? view.feedback} Your score reached zero. Restart to try again.`,
+        actionLabel: 'Restart assembly',
+        dismissible: false,
+      } : hint}
+      onSelectComponent={setSelected}
+      onInstallSelected={() => { if (selected) installComponent(selected); }}
+      canDropAt={(x, y) => canDropAt.current(x, y)}
+      onDropComponent={installComponent}
+      onDismissHint={() => {
+        if (view.hasFailed) restart();
+        else {
+          inputReadyAt.current = 0;
+          setHint(undefined);
+        }
+      }}
+      onToggleMute={() => setMuted((value) => !value)}
+    />
+  );
 }
 
 function columnsFor(count: number) {
