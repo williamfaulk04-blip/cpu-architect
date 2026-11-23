@@ -17,18 +17,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://cpu-architect-csc3501.fancy-crane-7139.chatgpt.site'),
   title: 'GPU Architect | CSC 3501',
-  description: 'Build a GPU layer by matching its components to their functions in this Phaser.js learning game.',
+  description: 'Build a GPU layer by layer while learning about processing hardware, memory, graphics card components, and cooling systems.',
   openGraph: {
     title: 'GPU Architect | CSC 3501',
-    description: 'Assemble the processing layer of a GPU in a Phaser.js learning game.',
+    description: 'Explore GPU architecture through interactive component assembly and educational gameplay.',
     images: ['/og.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'GPU Architect | CSC 3501',
-    description: 'Assemble the processing layer of a GPU in a Phaser.js learning game.',
+    description: 'Learn GPU architecture by assembling processing, memory, board, and cooling components.',
     images: ['/og.png'],
   },
 };
