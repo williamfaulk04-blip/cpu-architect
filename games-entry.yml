@@ -8,5 +8,5 @@
   topic: "GPU components and parallel processing architecture"
   description: "Assemble a GPU one layer at a time by matching each component to the function it performs."
   learning_objective: "After completing the game, the player should be able to identify the major processing, board-hardware, and cooling components of a GPU and explain how the three layers work together."
-  game_url: "/games/cpu-architect/"
-  thumbnail: "/games/cpu-architect/thumbnail.png"
+  game_url: "/games/gpu-architect/"
+  thumbnail: "/games/gpu-architect/thumbnail.png"
