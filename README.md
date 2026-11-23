@@ -1,94 +1,53 @@
-# GPU Architect
+# CPU Architect
 
-GPU Architect is a browser-based educational game for CSC 3501. Players assemble a graphics processing unit (GPU) layer by layer by matching components to their functions and learning how GPU hardware works.
+CPU Architect is a browser-based educational game prototype for CSC 3501. Players assemble a simplified processor one socket at a time by matching functional descriptions to the ALU, Control Unit, Register File, and L1 Cache.
 
 ## Learning objective
 
-After completing the game, the player should be able to identify major GPU processing, memory, board-level, and cooling components, describe each component's primary responsibility, and explain how the components work together to process and display data.
+After completing the game, the player should be able to identify four major CPU components, describe each component's primary responsibility, and distinguish their roles in a simplified processor datapath.
 
 ## How to play
 
 1. Read the functional description in the highlighted socket.
-2. Select a component and review its educational definition.
-3. Match the correct component to the highlighted socket.
-4. Read the Architect Log for explanations, feedback, or corrections.
-5. Complete each GPU assembly stage to unlock its achievement.
-6. Finish all three stages to view the completed GPU and learn how its components work together.
+2. Choose the component that performs that job.
+3. Read the Architect Log for an explanation or correction.
+4. Enter the correctly identified component and assemble its three internal systems.
+5. Return to the processor die and complete all four components to bring the core online.
 
-## Game stages
-
-**Stage 1: Processing Hardware**
-- Streaming Multiprocessor
-- CUDA Cores
-- Tensor Cores
-- GPU Cache
-- Memory Controller
-
-**Stage 2: Graphics Card Hardware**
-- GPU Chip
-- Printed Circuit Board (PCB)
-- Video RAM (VRAM)
-- Voltage Regulator Module (VRM)
-- PCIe Connector
-- Power Connector
-- Display Outputs (HDMI and DisplayPort)
-
-**Stage 3: Cooling Assembly**
-- Thermal Paste
-- Copper Heat Pipes
-- Heatsink
-
-The game includes 15 interactive components across the three stages.
-
-## Scoring system
-
-The planned scoring system starts at 1,000 points. Correct placements earn 100 points, first-attempt placements earn an additional 50 points, incorrect placements subtract 100 points, and completing a stage awards 250 bonus points. The maximum score is 4,000 points.
+The game starts at 1,000 points. Correct top-level choices earn 250 points, correct internal choices earn 150 points, and incorrect choices subtract 100 points. Reaching zero triggers a failure screen and restart option.
 
 ## Technology
 
 - Phaser.js for the interactive game scene
 - React and TypeScript for interface state
 - Vinext/Vite for development and deployment
-- CSS for the responsive GPU assembly interface
+- CSS for the responsive mission-control interface
 
 ## Development
 
 Install dependencies and run the local development server:
 
-```bash
 pnpm install
 pnpm dev
-```
+
 
 Create a production build with:
 
-```bash
 pnpm build
-```
+
 
 ## GitHub Pages
 
-The repository includes a separate static build so the editable source and the deployed site stay in sync. Run `pnpm build:pages` to create `pages-dist/`. Pushing to `main` triggers the included GitHub Actions workflow, which builds and publishes the game automatically.
+The repository includes a separate static build so the editable source and the deployed site stay in sync. Run pnpm build:pages to create pages-dist/. Pushing to main triggers the included GitHub Actions workflow, which builds and publishes the game automatically.
 
 ## Assignment alignment
 
-The game integrates educational content into its central mechanic. Players must identify GPU components, understand their responsibilities, and assemble the graphics card through interactive puzzles rather than answer unrelated quiz questions.
+The game integrates educational content into its central mechanic: players must reason about processor components rather than answer unrelated quiz questions. It includes player interaction, immediate feedback, a measurable objective, visible progression, instructions, and a technical visualization.
 
-## Accessibility and responsive design
+## Next milestones
 
-- Responsive layouts for desktop, tablet, and mobile.
-- Keyboard-accessible component selection.
-- Visible keyboard focus indicators.
-- Reduced-motion support.
-- Touch-friendly component selection.
-- Educational information that does not rely on hover interactions.
-
-## Original CPU Architect
-
-The original CPU Architect implementation is preserved separately in `components/cpu-game.tsx`. GPU Architect maintains its own implementation in `components/gpu-game.tsx`.
-
-## Reference materials
-
-- [Modal CUDA Programming Model](https://modal.com/gpu-glossary/device-software/cuda-programming-model)
-- [Modal GPU RAM Glossary](https://modal.com/gpu-glossary/device-hardware/gpu-ram)
-
+- Add guided signal-path animations after assembly.
+- Add a second mission covering the fetch-decode-execute cycle.
+- Add keyboard-accessible placement controls.
+- Create and validate the required 800 x 450 PNG gallery thumbnail.
+- Add the team's names and final gallery metadata before submission.
