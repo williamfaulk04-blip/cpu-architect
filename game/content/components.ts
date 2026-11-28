@@ -1,4 +1,3 @@
-
 import type { GpuComponent, GpuComponentId, ComponentCategory } from '../types';
 
 type ComponentContent = {
