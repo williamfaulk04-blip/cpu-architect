@@ -31,14 +31,33 @@ export type GpuComponent = {
   clue: string;
   explanation: string;
   color: string;
+  stageId: string;
+  stageOrder: number;
+  socketId: string;
+  socketOrder: number;
+  incorrectHint: string;
+  achievementText: string;
+  choices: readonly GpuComponentId[];
+  assetKey: string;
+  socketAssetKey: string;
+  position: {
+    desktop: { x: number; y: number };
+    mobile: { x: number; y: number };
+  };
+  availability: 'MVP' | 'STRETCH';
+  enabled: boolean;
 };
 
 export type GpuStage = {
   id: string;
   name: string;
   eyebrow: string;
+  order: number;
   introduction: string;
   completionMessage: string;
+  achievementName: string;
+  artworkKey: string;
+  stageBonus: number;
   componentIds: readonly GpuComponentId[];
 };
 
