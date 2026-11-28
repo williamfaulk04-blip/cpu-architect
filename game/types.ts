@@ -12,6 +12,7 @@ export type GpuComponentId =
   | 'gpu-chip'
   | 'pcb'
   | 'displayport'
+  | 'display-outputs'
   | 'hdmi-port'
   | 'power-connector'
   | 'pcie-connector'
