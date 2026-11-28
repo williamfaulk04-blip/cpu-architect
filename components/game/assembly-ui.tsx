@@ -105,7 +105,7 @@ export default function AssemblyUI<Id extends string>(props: AssemblyUIProps<Id>
     <div className="assembly-ui" data-reduced-motion={props.reducedMotion}>
       <header className="assembly-header">
         <h1>GPU Architect</h1>
-        <p>Stage {props.stageIndex + 1} / {props.stageCount} Â· {props.stageName}</p>
+        <p>Stage {props.stageIndex + 1} / {props.stageCount} - {props.stageName}</p>
         <p>Score <strong>{props.score.toLocaleString()}</strong></p>
         <button type="button" aria-pressed={props.muted} onClick={props.onToggleMute}>Mute</button>
       </header>
@@ -136,7 +136,7 @@ export default function AssemblyUI<Id extends string>(props: AssemblyUIProps<Id>
           <h2 id="assembly-socket-title">{props.activeSocketLabel}</h2>
           <p>{props.clue}</p>
           <label className="assembly-progress">
-            GPU progress Â· {props.installedTotal} / {props.totalComponentCount} installed
+            GPU progress - {props.installedTotal} / {props.totalComponentCount} installed
             <progress value={props.installedTotal} max={props.totalComponentCount} />
           </label>
           {props.phaseAction && (
