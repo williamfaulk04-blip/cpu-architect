@@ -1,6 +1,12 @@
 import { GPU_COMPONENTS } from './content/components';
 import { GPU_STAGES, TOTAL_COMPONENT_COUNT } from './content/stages';
-import { activeComponentId, activeStage, overallProgress, stageInstalledIds } from './session';
+import {
+  activeComponentId,
+  activeStage,
+  overallProgress,
+  stageComponentIds,
+  stageInstalledIds,
+} from './session';
 import type { GpuComponentId, SessionState } from './types';
 
 export type GameplayChoiceView = {
@@ -47,6 +53,15 @@ export type GameplayActions = {
 export function createGameplayViewModel(state: SessionState): GameplayViewModel {
   const stage = activeStage(state);
   const installed = stageInstalledIds(state);
+  const enabledStageIds = stageComponentIds(state);
+  const targetId = activeComponentId(state);
+
+  const choiceIds = targetId
+    ? GPU_COMPONENTS[targetId].choices.filter(
+        (id) => GPU_COMPONENTS[id].enabled && enabledStageIds.includes(id),
+      )
+    : enabledStageIds;
+
   return {
     phase: state.phase,
     score: state.score,
@@ -56,24 +71,29 @@ export function createGameplayViewModel(state: SessionState): GameplayViewModel 
     stageId: stage.id,
     stageName: stage.name,
     stageEyebrow: stage.eyebrow,
-    activeComponentId: activeComponentId(state),
-    choices: stage.componentIds.map((id) => {
+    activeComponentId: targetId,
+    choices: choiceIds.map((id) => {
       const component = GPU_COMPONENTS[id];
+
       return {
         id,
         name: component.name,
         shortName: component.shortName,
-        categoryLabel: component.category.replace('_', ' '),
+        categoryLabel: component.category.replaceAll('_', ' '),
         color: component.color,
         disabled: state.installedIds.includes(id),
         rejected: state.wrongId === id,
       };
     }),
     installedInStage: installed.length,
-    stageComponentCount: stage.componentIds.length,
-    installedTotal: state.installedIds.length,
+    stageComponentCount: enabledStageIds.length,
+    installedTotal: state.installedIds.filter(
+      (id) => GPU_COMPONENTS[id]?.enabled,
+    ).length,
     totalComponentCount: TOTAL_COMPONENT_COUNT,
-    stageProgress: installed.length / stage.componentIds.length,
+    stageProgress: enabledStageIds.length
+      ? installed.length / enabledStageIds.length
+      : 0,
     overallProgress: overallProgress(state),
     canStartStage: state.phase === 'STAGE_INTRO',
     canContinue: state.phase === 'STAGE_COMPLETE',
