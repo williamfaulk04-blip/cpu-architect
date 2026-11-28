@@ -92,6 +92,8 @@ function validateStages(stages: readonly GpuStage[]) {
       throw new Error(`GPU stage ${stage.id} has no components`);
     }
 
+    const stageSocketOrders = new Set<number>();
+
     for (const componentId of stage.componentIds) {
       const component = GPU_COMPONENTS[componentId];
 
@@ -110,10 +112,23 @@ function validateStages(stages: readonly GpuStage[]) {
         );
       }
 
+      if (component.stageOrder !== stage.order) {
+        throw new Error(
+          `Component ${componentId} has stage order ${component.stageOrder}, expected ${stage.order}`,
+        );
+      }
+
       if (socketIds.has(component.socketId)) {
         throw new Error(`Duplicate GPU socket id: ${component.socketId}`);
       }
       socketIds.add(component.socketId);
+
+      if (stageSocketOrders.has(component.socketOrder)) {
+        throw new Error(
+          `Duplicate socket order ${component.socketOrder} in stage ${stage.id}`,
+        );
+      }
+      stageSocketOrders.add(component.socketOrder);
 
       if (assetKeys.has(component.assetKey)) {
         throw new Error(`Duplicate GPU asset key: ${component.assetKey}`);
@@ -130,6 +145,14 @@ function validateStages(stages: readonly GpuStage[]) {
           throw new Error(`Unknown choice ${choiceId} for component ${componentId}`);
         }
       }
+
+      if (component.enabled && component.availability !== 'MVP') {
+        throw new Error(`Enabled component ${componentId} is not marked MVP`);
+      }
+
+      if (component.availability === 'MVP' && !component.enabled) {
+        throw new Error(`MVP component ${componentId} is disabled`);
+      }
     }
   }
 
@@ -139,12 +162,20 @@ function validateStages(stages: readonly GpuStage[]) {
     }
   }
 
-  const enabledCount = Object.values(GPU_COMPONENTS).filter(
+  const enabledComponents = Object.values(GPU_COMPONENTS).filter(
     (component) => component.enabled,
-  ).length;
+  );
 
-  if (enabledCount !== 15) {
-    throw new Error(`Expected 15 enabled MVP components, found ${enabledCount}`);
+  if (enabledComponents.length !== 15) {
+    throw new Error(
+      `Expected 15 enabled MVP components, found ${enabledComponents.length}`,
+    );
+  }
+
+  for (const component of enabledComponents) {
+    if (!componentIds.has(component.id)) {
+      throw new Error(`Enabled MVP component is missing from stages: ${component.id}`);
+    }
   }
 }
 
