@@ -34,7 +34,7 @@ export default function GpuGame() {
   const [selected, setSelected] = useState<GpuComponentId | null>(null);
   const [hint, setHint] = useState<{ title: string; message: string }>();
   const [muted, setMuted] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const [boardRevision, setBoardRevision] = useState(0);
   const motion = useRef(reducedMotion);
   const canDropAt = useRef<(x: number, y: number) => boolean>(() => false);
